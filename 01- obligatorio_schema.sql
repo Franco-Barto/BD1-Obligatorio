@@ -8,7 +8,11 @@ USE obligatorio;
 CREATE TABLE login (
    correo VARCHAR(120) NOT NULL PRIMARY KEY,
    contraseña VARCHAR(56) NOT NULL,
-   es_administrador BOOLEAN NOT NULL
+
+CREATE TABLE admins (
+   correo VARCHAR(120) NOT NULL PRIMARY KEY,
+   es_administrador BOOLEAN NOT NULL,
+   FOREIGN KEY (correo) REFERENCES login(correo)
 );
 
 
@@ -89,3 +93,17 @@ CREATE TABLE mantenimientos (
    FOREIGN KEY (id_maquina) REFERENCES maquinas(id),
    FOREIGN KEY (id_tecnico) REFERENCES tecnicos(id)
 );
+
+drop user 'login';
+drop user 'admin';
+drop user 'noadmin';
+create user 'login' identified by 'password';
+grant select,insert on login to 'login';
+grant select on admins to 'login';
+flush privileges;
+create user 'admin' identified by 'blablabla';
+GRANT ALL PRIVILEGES ON * TO 'admin';
+flush privileges;
+create user 'noadmin' identified by 'blebleble';
+grant select on * to 'noadmin';
+flush privileges;
