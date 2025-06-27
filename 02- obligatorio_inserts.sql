@@ -1,10 +1,15 @@
 
 Use obligatorio;
 
-INSERT INTO login (correo, contraseña, es_administrador) VALUES
-('juan.perez@gmail.com', Sha2('contrasena123',224), TRUE),
-('maria.lopez@gmail.com', Sha2('clave456',224), FALSE),
-('ana.morales@gmail.com', Sha2('pass789',224), FALSE);
+INSERT INTO login (correo, contraseña) VALUES
+('juan.perez@gmail.com', Sha2('contrasena123',224)),
+('maria.lopez@gmail.com', Sha2('clave456',224)),
+('ana.morales@gmail.com', Sha2('pass789',224));
+
+insert into admins values
+('juan.perez@gmail.com', TRUE),
+('maria.lopez@gmail.com', FALSE),
+('ana.morales@gmail.com', FALSE);
 
 
 INSERT INTO proveedores (nombre, contacto, tipo) VALUES
