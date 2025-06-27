@@ -1,3 +1,5 @@
+import mysql.connector
+
 config = {
   'user': 'login',
   'password': 'password',
@@ -5,7 +7,6 @@ config = {
   'database': 'obligatorio'
 }
 
-import mysql.connector
 def login(Correo, Contraseña):
     cnx = mysql.connector.connect(**config)
     cursor =cnx.cursor()
