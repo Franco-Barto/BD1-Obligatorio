@@ -41,7 +41,7 @@ def crear_usuario(Correo, Contraseña):
     for char in invalid_characters:
         if (char in Correo) or (char in Contraseña):
             print("Correo y/o Contraseña no pueden tener espacios, guiones o apóstrofos")
-            return 1
+            return config
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     query = "SELECT * FROM login WHERE (correo = '{}')".format(Correo)
@@ -49,14 +49,13 @@ def crear_usuario(Correo, Contraseña):
     usuario = cursor.fetchone()
     if usuario:
         print("Usuario existente")
-        return 1
+        return config
     cnx = mysql.connector.connect(**config)
     cursor = cnx.cursor()
     query = f"INSERT INTO login VALUES ('{Correo}',(SELECT sha2('{Contraseña}',224)))"
     cursor.execute(query)
     cnx.close()
-    return 1
-
+    return login(Correo, Contraseña)
 
 
 #Correo = input("Correo: ")
