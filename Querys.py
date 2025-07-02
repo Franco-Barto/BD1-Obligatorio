@@ -24,17 +24,49 @@ def tot_mensual(año,mes,config):
     query=f"Select c.*,sum(costo_alquiler_mensual+precio_unitario*ifnull(cantidad_usada,0)) as gastos_mensuales from (select * from registro_consumo where fecha between '{año}-{mes}-01' and '{año}-{mes}-{max_dia(año,mes)}') as rc right join maquinas as m on rc.id_maquina = m.id left join insumos as i on i.id = rc.id_insumo join clientes as c on c.id = m.id_cliente group by id_cliente"
     print(query)
     cursor.execute(query)
-    return cursor.fetchall()
+    tot=cursor.fetchall()
+    cnx.close()
+    return tot
 
-def top_insumos(cantidad,order_by='consumos',config):
+def top_insumos(config,cantidad=1,order_by='consumos',año=0,mes=0):
     cnx = mysql.connector.connect(**config)
     cursor =cnx.cursor()
-    query=f"select i.id, sum(ifnull(cantidad_usada,0)) as consumos, sum(ifnull(cantidad_usada,0)*precio_unitario) as costos from insumos as i left join registro_consumo as rc on i.id = rc.id_insumo group by i.id order by {order_by} limit {cantidad}"
+    if mes:
+        query = f"select i.id, sum(ifnull(cantidad_usada,0)) as consumos, sum(ifnull(cantidad_usada,0)*precio_unitario) as costos from insumos as i left join registro_consumo as rc on i.id = rc.id_insumo where fecha between '{año}-{mes}-01' and '{año}-{mes}-{max_dia(año,mes)}' group by i.id order by {order_by} limit {cantidad}"
+    elif año:
+        query = f"select i.id, sum(ifnull(cantidad_usada,0)) as consumos, sum(ifnull(cantidad_usada,0)*precio_unitario) as costos from insumos as i left join registro_consumo as rc on i.id = rc.id_insumo where fecha between '{año}-01-01' and '{año}-12-31' group by i.id order by {order_by} limit {cantidad}"
+    else:
+        query=f"select i.id, sum(ifnull(cantidad_usada,0)) as consumos, sum(ifnull(cantidad_usada,0)*precio_unitario) as costos from insumos as i left join registro_consumo as rc on i.id = rc.id_insumo group by i.id order by {order_by} limit {cantidad}"
     cursor.execute(query)
-    return cursor.fetchall()
+    top=cursor.fetchall()
+    cnx.close()
+    return top
+
+def top_tecnicos(config,catidad=1):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
+    query = f"select t.*, cantidad from tecnicos as t join (select id_tecnico, count(*) as cantidad from mantenimientos group by id_tecnico order by cantidad desc limit {catidad}) as ma on t.id = ma.id_tecnico"
+    cursor.execute(query)
+    top=cursor.fetchall()
+    cnx.close()
+    return top
+
+def top_clientes(config,cantidad=1):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
+    query = f"select clientes.*,cantidad from clientes join (select id_cliente, count(*) as cantidad from maquinas group by id_cliente order by cantidad desc limit {cantidad}) as s on clientes.id = s.id_cliente"
+    cursor.execute(query)
+    top=cursor.fetchall()
+    cnx.close()
+    return top
 
 config = Login.login("juan.perez@gmail.com","contrasena123")
 tot=tot_mensual(2025,7,config)
 print(tot)
-top=top_insumos(20,config)
+top=top_insumos(config,2)
 print(top)
+top=top_clientes(config,2)
+print(top)
+top=top_tecnicos(config,2)
+print(top)
+
