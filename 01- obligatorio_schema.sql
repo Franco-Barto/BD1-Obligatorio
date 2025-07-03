@@ -5,15 +5,10 @@ CREATE DATABASE obligatorio DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_spanis
 USE obligatorio;
 
 
-CREATE TABLE login(
-    correo     VARCHAR(120) NOT NULL PRIMARY KEY,
-    contraseña VARCHAR(56)  NOT NULL
-);
-
-CREATE TABLE admins (
+CREATE TABLE login (
    correo VARCHAR(120) NOT NULL PRIMARY KEY,
-   es_administrador BOOLEAN NOT NULL,
-   FOREIGN KEY (correo) REFERENCES login(correo)
+   contraseña VARCHAR(56) NOT NULL,
+   es_administrador BOOLEAN NOT NULL
 );
 
 
@@ -43,13 +38,19 @@ CREATE TABLE clientes (
    correo VARCHAR(120) NOT NULL
 );
 
-
 CREATE TABLE maquinas (
-   id INT AUTO_INCREMENT PRIMARY KEY,
-   modelo VARCHAR(45) NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    modelo VARCHAR (45) NOT NULL,
+    fecha_compra DATE,
+    disponibilidad BOOLEAN NOT NULL
+);
+
+CREATE TABLE maquinas_alquiler(
+   id_maquina INT PRIMARY KEY,
    id_cliente INT NOT NULL,
-   ubicacion_cliente VARCHAR(120) NOT NULL,
    costo_alquiler_mensual DECIMAL(10,2) NOT NULL,
+   fecha_alquiler DATE NOT NULL,
+   FOREIGN KEY (id_maquina) REFERENCES maquinas(id),
    FOREIGN KEY (id_cliente) REFERENCES clientes(id)
 );
 
@@ -78,7 +79,6 @@ CREATE TABLE horario_tecnicos (
     dia_semana INT NOT NULL,
     hora_ingreso TIME NOT NULL,
     hora_salida TIME NOT NULL,
-    PRIMARY KEY (id_tecnico,dia_semana),
     FOREIGN KEY (id_tecnico) REFERENCES tecnicos(id)
 );
 
@@ -94,17 +94,3 @@ CREATE TABLE mantenimientos (
    FOREIGN KEY (id_maquina) REFERENCES maquinas(id),
    FOREIGN KEY (id_tecnico) REFERENCES tecnicos(id)
 );
-
-drop user 'login';
-drop user 'admin';
-drop user 'noadmin';
-create user 'login' identified by 'password';
-grant select,insert on login to 'login';
-grant select on admins to 'login';
-flush privileges;
-create user 'admin' identified by 'blablabla';
-GRANT ALL PRIVILEGES ON * TO 'admin';
-flush privileges;
-create user 'noadmin' identified by 'blebleble';
-grant select on * to 'noadmin';
-flush privileges;
