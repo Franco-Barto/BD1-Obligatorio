@@ -19,10 +19,15 @@ INSERT INTO insumos (id,descripcion, tipo, precio_unitario, id_proveedor) VALUES
 (3,'Filtros de aire ', 'repuesto', 780, 2);
 
 
-INSERT INTO clientes (nombre, direccion, telefono, correo) VALUES
-('Constructora El Faro', 'Av. de las Artes 2345', '094567890', 'contacto.elfaro@gmail.com'),
-('Empresa Textil La Estrella', 'Bulevar Sarandí 1120', '095678901', 'ventas.laestrella@gmail.com'),
-('Logística Rápida', 'Callejón del Viento 657', '096789012', 'info.logistica@gmail.com');
+INSERT INTO clientes (nombre, telefono, correo) VALUES
+('Constructora El Faro', '094567890', 'contacto.elfaro@gmail.com'),
+('Empresa Textil La Estrella', '095678901', 'ventas.laestrella@gmail.com'),
+('Logística Rápida', '096789012', 'info.logistica@gmail.com');
+
+INSERT INTO direcciones (id_cliente, direccion) VALUES
+(1, 'Av. de las Artes 2345'),
+(2, 'Bulevar Sarandí 1120'),
+(3, 'Callejón del Viento 657');
 
 INSERT INTO maquinas (modelo, fecha_compra, disponibilidad) VALUES
 ('X-100', '2023-05-12', 0),
