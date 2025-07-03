@@ -1,4 +1,4 @@
-from db import get_connection
+import mysql.connector
 from datetime import datetime, date, time, timedelta
 
 # Funciones auxiliares para formatear fechas y horas
@@ -42,6 +42,22 @@ def maquina_existe(cursor, id_maquina):
         return False
     cursor.execute("SELECT COUNT(*) FROM maquinas WHERE id = %s", (id_int,))
     return cursor.fetchone()[0] > 0
+
+
+def maquinas_de_cliente(cursor, admin, id_cliente):
+    if admin:
+        cursor.execute(f"select id from maquinas")
+        maquinas = cursor.fetchall()
+    else:
+        cursor.execute(f"select id from maquinas where id_cliente = {id_cliente}")
+        maquinas = cursor.fetchall()
+    lista=[]
+    for i in maquinas:
+        lista.append(str(i[0]))
+    if len(lista)==0:
+        lista.append("0")
+    return lista
+
 
 def cliente_existe(cursor, id_cliente):
     try:
@@ -96,10 +112,13 @@ def tecnico_disponible(cursor, id_tecnico, fecha, hora):
 
     return count == 0
 
-# Opción 1: Consultar mantenimientos con filtros
-def consultar_mantenimientos():
-    conn = get_connection()
-    cursor = conn.cursor()
+
+# Opcion 1: Consulta de mantenimientos
+
+def consultar_mantenimientos(config, admin, id_cliente):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
+
 
     print("\n--- CONSULTAR MANTENIMIENTOS ---")
     print("Puede aplicar uno o más filtros combinados. Deje vacío para omitir.")
@@ -116,12 +135,15 @@ def consultar_mantenimientos():
             print("Técnico no existe. Intente nuevamente.")
 
     while True:
+        id_maqs = []
         id_maq = input("ID de la máquina: ").strip()
         if id_maq == "":
-            id_maq = None
+            id_maqs = maquinas_de_cliente(cursor, admin, id_cliente)
             break
-        elif maquina_existe(cursor, id_maq):
-            id_maq = int(id_maq)
+
+        if maquina_existe(cursor, id_maq) and int(id_maq) in maquinas_de_cliente(cursor, admin, id_cliente):
+            id_maqs.append(int(id_maq))
+
             break
         else:
             print("Máquina no existe. Intente nuevamente.")
@@ -176,13 +198,15 @@ def consultar_mantenimientos():
 
     condiciones = []
     valores = []
+    maq_str = []
 
     if id_tec is not None:
         condiciones.append("m.id_tecnico = %s")
         valores.append(id_tec)
-    if id_maq is not None:
-        condiciones.append("m.id_maquina = %s")
-        valores.append(id_maq)
+    for i in id_maqs:
+        maq_str.append("m.id_maquina = %s")
+        valores.append(i)
+    condiciones.append("(" +" OR ".join(maq_str)+")")
     if fecha_desde and fecha_hasta:
         condiciones.append("m.fecha BETWEEN %s AND %s")
         valores.extend([fecha_desde, fecha_hasta])
@@ -243,20 +267,20 @@ Observaciones:     {obs or '(sin observaciones)'}
     else:
         print("No se encontraron resultados.")
 
-    cursor.close()
-    conn.close()
-
-# Opción 2: Editar o cancelar mantenimientos
-def editar_mantenimiento():
-    conn = get_connection()
-    cursor = conn.cursor()
+    cnx.close()
+    
+    
+# Opción 2: Edición/cancelamiento de mantenimientos
+def editar_mantenimiento(config, admin, id_cliente):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     while True:
         id_m = input("Ingrese ID del mantenimiento a editar: ").strip()
         if not id_m.isdigit():
             print("ID debe ser numérico. Intente nuevamente.")
             continue
-        cursor.execute("""
+        query="""
                        SELECT m.id,
                               m.tipo,
                               m.fecha,
@@ -278,9 +302,15 @@ def editar_mantenimiento():
                                 JOIN maquinas_alquiler ma_alq ON ma_alq.id_maquina = ma.id
                                 JOIN clientes c ON ma_alq.id_cliente = c.id
                                 JOIN direcciones d ON d.id = ma_alq.id_direccion
-                       WHERE m.id = %s
-                       """, (id_m,))
-
+                       WHERE m.id = %s"""
+        id_maqs = maquinas_de_cliente(cursor, admin, id_cliente)
+        valores = [id_m]
+        maq_str = []
+        for i in id_maqs:
+            maq_str.append("m.id_maquina = %s")
+            valores.append(i)
+        query+=(" AND (" + " OR ".join(maq_str) + ")")
+        cursor.execute(query, tuple(valores))
         mantenimiento = cursor.fetchone()
         if not mantenimiento:
             print("Mantenimiento no encontrado. Intente nuevamente.")
@@ -353,7 +383,7 @@ Dirección máquina: {direccion}
 
             if confirmar_entrada("Confirmar cambio de técnico? (s/n): ") == 's':
                 cursor.execute("UPDATE mantenimientos SET id_tecnico = %s WHERE id = %s", (nuevo_id_int, id_m))
-                conn.commit()
+                cnx.commit()
                 print("Técnico actualizado correctamente.")
                 break
             else:
@@ -393,11 +423,13 @@ Dirección máquina: {direccion}
         if confirmar_entrada("Confirmar cambio de fecha y hora? (s/n): ") == 's':
             cursor.execute("UPDATE mantenimientos SET fecha = %s, hora = %s WHERE id = %s",
                            (fecha_nueva, hora_nueva, id_m))
-            conn.commit()
+            cnx.commit()
             print("Fecha y hora actualizadas correctamente.")
         else:
             print("Cambio cancelado.")
 
+
+    
     elif opcion == '3':
         if confirmar_entrada("¿Seguro que desea cancelar? (s/n): ") == 's':
             cursor.execute("DELETE FROM mantenimientos WHERE id = %s", (id_m,))
@@ -405,9 +437,8 @@ Dirección máquina: {direccion}
             print("Mantenimiento cancelado.")
         else:
             print("Cancelación rechazada.")
-
-    cursor.close()
-    conn.close()
+    cnx.commit()
+    cnx.close()
 
 # Opción 3: Asignar nuevo mantenimiento
 def obtener_fecha_hora_y_tecnicos(cursor):
@@ -482,9 +513,9 @@ def obtener_fecha_hora_y_tecnicos(cursor):
         else:
             print("\nNo hay técnicos disponibles en ese horario. Ingrese otra fecha y hora.")
 
-def asignar_mantenimiento():
-    conn = get_connection()
-    cursor = conn.cursor()
+def asignar_mantenimiento(config, admin, id_cliente):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     print("\n--- Asignación de mantenimiento ---")
 
@@ -494,13 +525,20 @@ def asignar_mantenimiento():
     for t in disponibles:
         print(f"ID: {t[0]} | Nombre: {t[1]} {t[2]}")
 
-    # Ahora buscamos máquinas alquiladas y mostrar también la dirección asociada
-    cursor.execute("""
-                   SELECT m.id, m.modelo, d.direccion
-                   FROM maquinas m
+
+    # Mostrar máquinas
+    query=""""SELECT m.id, m.modelo, d.direccion
+                    FROM maquinas m
                             JOIN maquinas_alquiler ma ON m.id = ma.id_maquina
-                            JOIN direcciones d ON ma.id_direccion = d.id
-                   """)
+                            JOIN direcciones d ON ma.id_direccion = d.id""""
+    id_maqs = maquinas_de_cliente(cursor, admin, id_cliente)
+    maq_str = []
+    valores = []
+    for i in id_maqs:
+        maq_str.append("m.id = %s")
+        valores.append(i)
+    query += (" WHERE (" + " OR ".join(maq_str) + ")")
+    cursor.execute(query, tuple(valores))
     maquinas = cursor.fetchall()
 
     if not maquinas:
@@ -518,7 +556,7 @@ def asignar_mantenimiento():
         if id_maquina_str.isdigit():
             id_maquina = int(id_maquina_str)
             # Validar que id_maquina esté en las máquinas disponibles
-            if any(id_maquina == m[0] for m in maquinas):
+            if any(id_maquina == m[0] for m in maquinas) or id_maquina_str in id_maqs:
                 break
         print("ID inválido o máquina no disponible. Intente nuevamente.")
 
@@ -554,17 +592,17 @@ Observaciones: {observaciones or '(sin observaciones)'}
 
     if confirmar_entrada("Confirmar asignación? (s/n): ") == 's':
         cursor.execute("""
-            INSERT INTO mantenimientos (id_maquina, id_tecnico, tipo, fecha, hora, observaciones)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (id_maquina, id_tecnico, tipo, fecha, hora, observaciones))
-        conn.commit()
+                       INSERT INTO mantenimientos (id_maquina, id_tecnico, tipo, fecha, hora, observaciones)
+                       VALUES (%s, %s, %s, %s, %s, %s)
+                       """, (id_maquina, id_tecnico, tipo, fecha, hora, observaciones or None))
+        cnx.commit()
         print("Mantenimiento asignado correctamente.")
     else:
         print("Asignación cancelada.")
 
-    cursor.close()
-    conn.close()
 
+    cnx.close()
+   
 # Menú principal
 def menu_mantenimientos():
     while True:
@@ -589,4 +627,11 @@ def menu_mantenimientos():
             print("Opción inválida. Intente nuevamente.")
 
 if __name__ == "__main__":
-    menu_mantenimientos()
+    config = {
+        'user': 'login',
+        'password': 'password',
+        'host': '127.0.0.1',
+        'database': 'obligatorio'
+    }
+    config.update({'user': 'admin', 'password': 'blablabla'})
+    main(config, False, 1)
