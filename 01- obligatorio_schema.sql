@@ -54,10 +54,12 @@ CREATE TABLE maquinas (
 CREATE TABLE maquinas_alquiler(
    id_maquina INT PRIMARY KEY,
    id_cliente INT NOT NULL,
+   id_direccion INT NOT NULL,
    costo_alquiler_mensual DECIMAL(10,2) NOT NULL,
    fecha_alquiler DATE NOT NULL,
    FOREIGN KEY (id_maquina) REFERENCES maquinas(id),
-   FOREIGN KEY (id_cliente) REFERENCES clientes(id)
+   FOREIGN KEY (id_cliente) REFERENCES clientes(id),
+   FOREIGN KEY (id_direccion) REFERENCES direcciones(id)
 );
 
 
@@ -100,3 +102,4 @@ CREATE TABLE mantenimientos (
    FOREIGN KEY (id_maquina) REFERENCES maquinas(id),
    FOREIGN KEY (id_tecnico) REFERENCES tecnicos(id)
 );
+
