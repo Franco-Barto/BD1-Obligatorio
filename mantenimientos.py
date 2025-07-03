@@ -1,32 +1,37 @@
 from db import get_connection
 from datetime import datetime, date, time, timedelta
 
-# Funciones auxiliares para formatear fechas y horas
+# --- Funciones auxiliares ---
+
 def formatear_fecha_ddmmyyyy(fecha_str):
+    # Convierte DDMMYYYY a YYYY-MM-DD para datetime
     if len(fecha_str) != 8 or not fecha_str.isdigit():
         return None
     return f"{fecha_str[4:8]}-{fecha_str[2:4]}-{fecha_str[0:2]}"
 
 def formatear_hora(hora_str):
+    # Convierte HHMM a HH:MM
     if len(hora_str) != 4 or not hora_str.isdigit():
         return None
     return f"{hora_str[0:2]}:{hora_str[2:4]}"
 
 def timedelta_a_time(td):
+    # Convierte timedelta a time (horas y minutos)
     segundos = td.total_seconds()
     horas = int(segundos // 3600)
     minutos = int((segundos % 3600) // 60)
     return time(horas, minutos)
 
-# Confirmación estándar para preguntas s/n
 def confirmar_entrada(prompt):
+    # Solo acepta 's' o 'n', vuelve a preguntar si es inválido
     while True:
         entrada = input(prompt).strip().lower()
         if entrada in ['s', 'n']:
             return entrada
         print("Entrada inválida. Debe ser 's' o 'n'.")
 
-# Validaciones básicas de existencia en la base de datos
+# --- Validaciones de existencia en BD ---
+
 def tecnico_existe(cursor, id_tecnico):
     try:
         id_int = int(id_tecnico)
@@ -51,8 +56,10 @@ def cliente_existe(cursor, id_cliente):
     cursor.execute("SELECT COUNT(*) FROM clientes WHERE id = %s", (id_int,))
     return cursor.fetchone()[0] > 0
 
-# Validar disponibilidad del técnico para una fecha y hora
+# --- Validar disponibilidad técnico ---
+
 def tecnico_disponible(cursor, id_tecnico, fecha, hora):
+    # Asegura que el técnico esté dentro del horario y no tenga otro mantenimiento
     if isinstance(hora, timedelta):
         hora = (datetime.min + hora).time()
     elif isinstance(hora, str):
@@ -70,12 +77,14 @@ def tecnico_disponible(cursor, id_tecnico, fecha, hora):
     horario = cursor.fetchone()
     if not horario:
         return False
+
     hora_ingreso, hora_salida = horario
     if isinstance(hora_ingreso, timedelta):
         hora_ingreso = timedelta_a_time(hora_ingreso)
     if isinstance(hora_salida, timedelta):
         hora_salida = timedelta_a_time(hora_salida)
 
+    # El técnico debe poder terminar el mantenimiento (45 min antes del fin de jornada)
     limite_salida = (datetime.combine(date.min, hora_salida) - timedelta(minutes=45)).time()
     if not (hora_ingreso <= hora <= limite_salida):
         return False
@@ -95,7 +104,8 @@ def tecnico_disponible(cursor, id_tecnico, fecha, hora):
 
     return count == 0
 
-# Opción 1: Consultar mantenimientos con filtros
+# --- Opción 1: Consultar mantenimientos con filtros ---
+
 def consultar_mantenimientos():
     conn = get_connection()
     cursor = conn.cursor()
@@ -103,6 +113,7 @@ def consultar_mantenimientos():
     print("\n--- CONSULTAR MANTENIMIENTOS ---")
     print("Puede aplicar uno o más filtros combinados. Deje vacío para omitir.")
 
+    # Pide filtro para técnico
     while True:
         id_tec = input("ID del técnico: ").strip()
         if id_tec == "":
@@ -114,6 +125,7 @@ def consultar_mantenimientos():
         else:
             print("Técnico no existe. Intente nuevamente.")
 
+    # Pide filtro para máquina
     while True:
         id_maq = input("ID de la máquina: ").strip()
         if id_maq == "":
@@ -125,6 +137,7 @@ def consultar_mantenimientos():
         else:
             print("Máquina no existe. Intente nuevamente.")
 
+    # Fecha desde
     while True:
         fecha_desde_raw = input("Fecha desde (DDMMYYYY, vacío para omitir): ").strip()
         if fecha_desde_raw == "":
@@ -140,6 +153,7 @@ def consultar_mantenimientos():
         else:
             print("Fecha inválida.")
 
+    # Fecha hasta
     while True:
         fecha_hasta_raw = input("Fecha hasta (DDMMYYYY, vacío para omitir): ").strip()
         if fecha_hasta_raw == "":
@@ -158,6 +172,7 @@ def consultar_mantenimientos():
         else:
             print("Fecha inválida.")
 
+    # Hora
     while True:
         hora_raw = input("Hora (HHMM, vacío para omitir): ").strip()
         if hora_raw == "":
@@ -241,7 +256,8 @@ Observaciones:     {obs or '(sin observaciones)'}
     cursor.close()
     conn.close()
 
-# Opción 2: Editar o cancelar mantenimientos
+# --- Opción 2: Editar o cancelar mantenimiento ---
+
 def editar_mantenimiento():
     conn = get_connection()
     cursor = conn.cursor()
@@ -252,26 +268,17 @@ def editar_mantenimiento():
             print("ID debe ser numérico. Intente nuevamente.")
             continue
         cursor.execute("""
-                       SELECT m.id,
-                              m.tipo,
-                              m.fecha,
-                              m.hora,
-                              m.observaciones,
-                              t.id,
-                              t.nombre,
-                              t.apellido,
-                              ma.id,
-                              ma.modelo,
-                              c.id,
-                              c.nombre,
-                              c.direccion
-                       FROM mantenimientos m
-                                JOIN tecnicos t ON m.id_tecnico = t.id
-                                JOIN maquinas ma ON m.id_maquina = ma.id
-                                JOIN maquinas_alquiler ma_alq ON ma_alq.id_maquina = ma.id
-                                JOIN clientes c ON ma_alq.id_cliente = c.id
-                       WHERE m.id = %s
-                       """, (id_m,))
+            SELECT m.id, m.tipo, m.fecha, m.hora, m.observaciones,
+                   t.id, t.nombre, t.apellido,
+                   ma.id, ma.modelo,
+                   c.id, c.nombre, c.direccion
+            FROM mantenimientos m
+            JOIN tecnicos t ON m.id_tecnico = t.id
+            JOIN maquinas ma ON m.id_maquina = ma.id
+            JOIN maquinas_alquiler ma_alq ON ma_alq.id_maquina = ma.id
+            JOIN clientes c ON ma_alq.id_cliente = c.id
+            WHERE m.id = %s
+        """, (id_m,))
         mantenimiento = cursor.fetchone()
         if not mantenimiento:
             print("Mantenimiento no encontrado. Intente nuevamente.")
@@ -305,13 +312,13 @@ Cliente: {nom_cli}, {dir_cli} (ID: {id_cli})
 
     while True:
         opcion = input("Seleccione: ").strip()
-        if opcion in ['1','2','3']:
+        if opcion in ['1', '2', '3']:
             break
         print("Opción inválida. Intente de nuevo.")
 
     if opcion == '1':
         intentos = 0
-        max_intentos = 3  # por ejemplo, 3 intentos para elegir técnico disponible
+        max_intentos = 3
 
         while intentos < max_intentos:
             nuevo_id = input("Nuevo ID de técnico (o 'salir' para cancelar): ").strip()
@@ -324,7 +331,6 @@ Cliente: {nom_cli}, {dir_cli} (ID: {id_cli})
                 continue
             nuevo_id_int = int(nuevo_id)
 
-            # obtener hora del mantenimiento actual
             if isinstance(hora_td, timedelta):
                 hora_val = (datetime.min + hora_td).time()
             elif isinstance(hora_td, time):
@@ -349,10 +355,8 @@ Cliente: {nom_cli}, {dir_cli} (ID: {id_cli})
             else:
                 print("Cambio cancelado.")
                 break
-
         else:
             print("Se alcanzó el número máximo de intentos. Operación cancelada.")
-
 
     elif opcion == '2':
         hoy = date.today()
@@ -379,6 +383,8 @@ Cliente: {nom_cli}, {dir_cli} (ID: {id_cli})
 
         if not tecnico_disponible(cursor, id_tec, fecha_nueva, hora_nueva):
             print("El técnico no está disponible en la nueva fecha y hora.")
+            cursor.close()
+            conn.close()
             return
 
         if confirmar_entrada("Confirmar cambio de fecha y hora? (s/n): ") == 's':
@@ -400,11 +406,14 @@ Cliente: {nom_cli}, {dir_cli} (ID: {id_cli})
     cursor.close()
     conn.close()
 
-# Opción 3: Asignar nuevo mantenimiento
+# --- Opción 3: Asignar nuevo mantenimiento ---
+
 def obtener_fecha_hora_y_tecnicos(cursor):
     hoy = date.today()
     limite_anual = hoy + timedelta(days=365)
+
     while True:
+        # Pedir fecha con validación y rango
         while True:
             fecha_raw = input("\nFecha (DDMMYYYY, sin guiones): ").strip()
             fecha_formateada = formatear_fecha_ddmmyyyy(fecha_raw)
@@ -420,6 +429,7 @@ def obtener_fecha_hora_y_tecnicos(cursor):
             except ValueError:
                 print("Fecha inválida.")
 
+        # Pedir hora con validación
         while True:
             hora_raw = input("Hora (HHMM, sin dos puntos): ").strip()
             hora_formateada = formatear_hora(hora_raw)
@@ -438,6 +448,7 @@ def obtener_fecha_hora_y_tecnicos(cursor):
         inicio_nuevo = datetime.combine(fecha, hora)
         fin_bloqueo = inicio_nuevo + timedelta(minutes=45)
 
+        # Traer técnicos del día
         cursor.execute("""
             SELECT t.id, t.nombre, t.apellido, ht.hora_ingreso, ht.hora_salida
             FROM tecnicos t
@@ -453,7 +464,7 @@ def obtener_fecha_hora_y_tecnicos(cursor):
                 ingreso = timedelta_a_time(ingreso)
             if isinstance(salida, timedelta):
                 salida = timedelta_a_time(salida)
-            hora_limite = (datetime.combine(date(2000,1,1), salida) - timedelta(minutes=45)).time()
+            hora_limite = (datetime.combine(date.min, salida) - timedelta(minutes=45)).time()
             if not (ingreso <= hora <= hora_limite):
                 continue
 
@@ -554,7 +565,8 @@ def asignar_mantenimiento():
     cursor.close()
     conn.close()
 
-# Función principal para menú
+# --- Menú principal ---
+
 def menu():
     while True:
         print("\n--- Gestión de Mantenimientos ---")
