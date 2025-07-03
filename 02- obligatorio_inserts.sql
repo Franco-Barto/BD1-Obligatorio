@@ -36,10 +36,10 @@ INSERT INTO maquinas (modelo, fecha_compra, disponibilidad) VALUES
 ('ZX-500', '2023-12-01', 1),
 ('P-880', '2021-08-15', 1);
 
-INSERT INTO maquinas_alquiler (id_maquina, id_cliente, fecha_alquiler, costo_alquiler_mensual) VALUES
-(1, 1, '2025-07-01', 35000),
-(2, 2, '2025-07-01', 28000),
-(3, 3, '2025-07-01', 32000);
+INSERT INTO maquinas_alquiler (id_maquina, id_cliente, id_direccion, fecha_alquiler, costo_alquiler_mensual) VALUES
+(1, 1, 1,'2025-07-01', 35000),
+(2, 2, 2,'2025-07-01', 28000),
+(3, 3, 3,'2025-07-01', 32000);
 
 
 INSERT INTO registro_consumo (id_maquina, id_insumo, fecha, cantidad_usada) VALUES
