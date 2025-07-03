@@ -1,15 +1,10 @@
 
 Use obligatorio;
 
-INSERT INTO login (correo, contraseña) VALUES
-('juan.perez@gmail.com', Sha2('contrasena123',224)),
-('maria.lopez@gmail.com', Sha2('clave456',224)),
-('ana.morales@gmail.com', Sha2('pass789',224));
-
-insert into admins values
-('juan.perez@gmail.com', TRUE),
-('maria.lopez@gmail.com', FALSE),
-('ana.morales@gmail.com', FALSE);
+INSERT INTO login (correo, contraseña, es_administrador) VALUES
+('juan.perez@gmail.com', Sha2('contrasena123',224), TRUE),
+('maria.lopez@gmail.com', Sha2('clave456',224), FALSE),
+('ana.morales@gmail.com', Sha2('pass789',224), FALSE);
 
 
 INSERT INTO proveedores (nombre, contacto, tipo) VALUES
@@ -29,11 +24,17 @@ INSERT INTO clientes (nombre, direccion, telefono, correo) VALUES
 ('Empresa Textil La Estrella', 'Bulevar Sarandí 1120', '095678901', 'ventas.laestrella@gmail.com'),
 ('Logística Rápida', 'Callejón del Viento 657', '096789012', 'info.logistica@gmail.com');
 
+INSERT INTO maquinas (modelo, fecha_compra, disponibilidad) VALUES
+('X-100', '2023-05-12', 0),
+('R-3000', '2024-01-22', 0),
+('M-200', '2022-10-03', 0),
+('ZX-500', '2023-12-01', 1),
+('P-880', '2021-08-15', 1);
 
-INSERT INTO maquinas (modelo, id_cliente, ubicacion_cliente, costo_alquiler_mensual) VALUES
-('X-100', 1, 'Planta Central, Av. de las Artes 2345', 35000),
-('R-3000', 2, 'Sucursal Norte, Bulevar Sarandí 1120', 28000),
-('M-200', 3, 'Depósito Principal, Callejón del Viento 657', 32000);
+INSERT INTO maquinas_alquiler (id_maquina, id_cliente, fecha_alquiler, costo_alquiler_mensual) VALUES
+(1, 1, '2025-07-01', 35000),
+(2, 2, '2025-07-01', 28000),
+(3, 3, '2025-07-01', 32000);
 
 
 INSERT INTO registro_consumo (id_maquina, id_insumo, fecha, cantidad_usada) VALUES
