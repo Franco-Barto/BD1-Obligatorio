@@ -60,13 +60,30 @@ def top_clientes(config,cantidad=1):
     cnx.close()
     return top
 
-config = Login.login("juan.perez@gmail.com","contrasena123")
-tot=tot_mensual(2025,7,config)
-print(tot)
-top=top_insumos(config,2)
-print(top)
-top=top_clientes(config,2)
-print(top)
-top=top_tecnicos(config,2)
-print(top)
+def maquinas_de_cliente(cursor, admin, id_cliente):
+    if admin:
+        cursor.execute(f"select id from maquinas")
+        maquinas = cursor.fetchall()
+    else:
+        cursor.execute(f"select id from maquinas where id_cliente = {id_cliente}")
+        maquinas = cursor.fetchall()
+    lista=[]
+    for i in maquinas:
+        lista.append(i[0])
+    if len(lista)==0:
+        lista.append(0)
+    return lista
 
+config, admin, id_cliente = Login.login("juan.perez@gmail.com","contrasena123")
+#tot=tot_mensual(2025,7,config)
+#print(tot)
+#top=top_insumos(config,2)
+#print(top)
+#top=top_clientes(config,2)
+#print(top)
+#top=top_tecnicos(config,2)
+#print(top)
+
+cnx = mysql.connector.connect(**config)
+cursor = cnx.cursor()
+print(f"{maquinas_de_cliente(cursor, False, 4)}")
