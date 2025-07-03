@@ -33,9 +33,15 @@ CREATE TABLE insumos (
 CREATE TABLE clientes (
    id INT AUTO_INCREMENT PRIMARY KEY,
    nombre VARCHAR(50) NOT NULL,
-   direccion VARCHAR(120) NOT NULL UNIQUE,
    telefono VARCHAR(20),
    correo VARCHAR(120) NOT NULL
+);
+
+CREATE TABLE direcciones (
+   id INT AUTO_INCREMENT PRIMARY KEY,
+   id_cliente INT NOT NULL,
+   direccion VARCHAR(120) NOT NULL,
+   FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE maquinas (
