@@ -1,5 +1,5 @@
 import re
-from db import get_connection
+import mysql.connector
 from datetime import date
 
 # --- Validaciones básicas ---
@@ -39,9 +39,9 @@ def direccion_existe(cursor, id_direccion, id_cliente=None):
 
 # --- Agregar cliente ---
 
-def agregar_cliente():
-    conn = get_connection()
-    cursor = conn.cursor()
+def agregar_cliente(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     while True:
         nombre = input("Nombre del cliente: ").strip()
@@ -71,20 +71,20 @@ def agregar_cliente():
     if confirmar_entrada("¿Confirmar creación del cliente? (s/n): ") != 's':
         print("Creación cancelada.")
         cursor.close()
-        conn.close()
+        cnx.close()
         return
 
     cursor.execute("INSERT INTO clientes (nombre, correo, telefono) VALUES (%s, %s, %s)", (nombre, correo, telefono))
-    conn.commit()
+    cnx.commit()
     id_cliente = cursor.lastrowid
     print(f"Cliente creado con ID {id_cliente}.")
 
-    agregar_direcciones_cliente(cursor, conn, id_cliente)
+    agregar_direcciones_cliente(cursor, cnx, id_cliente)
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def agregar_direcciones_cliente(cursor, conn, id_cliente):
+def agregar_direcciones_cliente(cursor, cnx, id_cliente):
     while True:
         agregar = input("¿Desea agregar una dirección para este cliente? (s/n): ").strip().lower()
         if agregar == 's':
@@ -94,7 +94,7 @@ def agregar_direcciones_cliente(cursor, conn, id_cliente):
                     break
                 print("Dirección inválida.")
             cursor.execute("INSERT INTO direcciones (id_cliente, direccion) VALUES (%s, %s)", (id_cliente, direccion))
-            conn.commit()
+            cnx.commit()
             print("Dirección agregada.")
         elif agregar == 'n':
             break
@@ -103,9 +103,9 @@ def agregar_direcciones_cliente(cursor, conn, id_cliente):
 
 # --- Listar clientes ---
 
-def listar_clientes():
-    conn = get_connection()
-    cursor = conn.cursor()
+def listar_clientes(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     filtro = input("Filtrar por texto en nombre, correo o teléfono (vacío para todos): ").strip()
     if filtro:
@@ -135,13 +135,13 @@ def listar_clientes():
         print("No se encontraron clientes.")
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
 # --- Editar cliente ---
 
-def editar_cliente():
-    conn = get_connection()
-    cursor = conn.cursor()
+def editar_cliente(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     while True:
         id_cliente = input("ID del cliente a editar: ").strip()
@@ -192,17 +192,17 @@ def editar_cliente():
     query = f"UPDATE clientes SET {', '.join(campos)} WHERE id = %s"
     valores.append(id_cliente)
     cursor.execute(query, tuple(valores))
-    conn.commit()
+    cnx.commit()
     print("Cliente actualizado.")
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
 # --- Borrar cliente ---
 
-def borrar_cliente():
-    conn = get_connection()
-    cursor = conn.cursor()
+def borrar_cliente(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     id_cliente = input("ID del cliente a borrar: ").strip()
     if not id_cliente.isdigit() or not cliente_existe(cursor, id_cliente):
@@ -221,17 +221,17 @@ def borrar_cliente():
 
     cursor.execute("DELETE FROM direcciones WHERE id_cliente = %s", (id_cliente,))
     cursor.execute("DELETE FROM clientes WHERE id = %s", (id_cliente,))
-    conn.commit()
+    cnx.commit()
     print("Cliente y direcciones eliminados.")
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
 # --- Gestión de direcciones ---
 
-def agregar_direccion_cliente():
-    conn = get_connection()
-    cursor = conn.cursor()
+def agregar_direccion_cliente(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     id_cliente = input("ID del cliente: ").strip()
     if not id_cliente.isdigit() or not cliente_existe(cursor, id_cliente):
@@ -244,29 +244,29 @@ def agregar_direccion_cliente():
         return
 
     cursor.execute("INSERT INTO direcciones (id_cliente, direccion) VALUES (%s, %s)", (id_cliente, direccion))
-    conn.commit()
+    cnx.commit()
     print("Dirección agregada.")
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def editar_direccion_cliente():
-    conn = get_connection()
-    cursor = conn.cursor()
+def editar_direccion_cliente(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     id_direccion = input("ID de la dirección: ").strip()
     nueva_direccion = input("Nueva dirección: ").strip()
 
     cursor.execute("UPDATE direcciones SET direccion = %s WHERE id = %s", (nueva_direccion, id_direccion))
-    conn.commit()
+    cnx.commit()
     print("Dirección actualizada.")
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def borrar_direccion_cliente():
-    conn = get_connection()
-    cursor = conn.cursor()
+def borrar_direccion_cliente(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     id_direccion = input("ID de la dirección: ").strip()
 
@@ -276,16 +276,16 @@ def borrar_direccion_cliente():
         return
 
     cursor.execute("DELETE FROM direcciones WHERE id = %s", (id_direccion,))
-    conn.commit()
+    cnx.commit()
     print("Dirección eliminada.")
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
 
 # --- Menú principal ---
 
-def menu_clientes():
+def menu_clientes(config):
     while True:
         print("""
 --- Gestión de Clientes ---
@@ -300,19 +300,19 @@ def menu_clientes():
 """)
         opcion = input("Seleccione una opción: ").strip()
         if opcion == '1':
-            listar_clientes()
+            listar_clientes(config)
         elif opcion == '2':
-            agregar_cliente()
+            agregar_cliente(config)
         elif opcion == '3':
-            editar_cliente()
+            editar_cliente(config)
         elif opcion == '4':
-            borrar_cliente()
+            borrar_cliente(config)
         elif opcion == '5':
-            agregar_direccion_cliente()
+            agregar_direccion_cliente(config)
         elif opcion == '6':
-            editar_direccion_cliente()
+            editar_direccion_cliente(config)
         elif opcion == '7':
-            borrar_direccion_cliente()
+            borrar_direccion_cliente(config)
         elif opcion == '8':
             print("Saliendo...")
             break

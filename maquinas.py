@@ -1,4 +1,4 @@
-from db import get_connection
+import mysql.connector
 from datetime import date
 
 def confirmar_entrada(prompt):
@@ -8,9 +8,9 @@ def confirmar_entrada(prompt):
             return entrada
         print("Entrada inválida. Debe ser 's' o 'n'.")
 
-def listar_maquinas():
-    conn = get_connection()
-    cursor = conn.cursor()
+def listar_maquinas(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     filtro_texto = input("Filtrar por texto en modelo (vacío para todos): ").strip()
     filtro_disp = None
@@ -56,11 +56,11 @@ def listar_maquinas():
         print("No se encontraron máquinas con ese filtro.")
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def agregar_maquina():
-    conn = get_connection()
-    cursor = conn.cursor()
+def agregar_maquina(confi):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     while True:
         modelo = input("Modelo de la máquina (max 45 caracteres): ").strip()
@@ -83,19 +83,20 @@ def agregar_maquina():
         cursor.execute("""
             INSERT INTO maquinas (modelo, fecha_compra, disponibilidad) VALUES (%s, %s, TRUE)
         """, (modelo, fecha_compra))
-        conn.commit()
+        cnx.commit()
         print("Máquina agregada correctamente.")
     except Exception as e:
         print("Error al agregar máquina:", e)
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def eliminar_maquina():
-    conn = get_connection()
-    cursor = conn.cursor()
+def eliminar_maquina(config):
 
-    listar_maquinas()
+    listar_maquinas(config)
+
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     while True:
         id_maquina = input("ID de la máquina a eliminar: ").strip()
@@ -113,7 +114,7 @@ def eliminar_maquina():
         if cursor.fetchone()[0] > 0:
             print("No se puede eliminar. La máquina está asignada a un cliente.")
             cursor.close()
-            conn.close()
+            cnx.close()
             return
         break
 
@@ -121,22 +122,22 @@ def eliminar_maquina():
     if confirmar != 's':
         print("Operación cancelada.")
         cursor.close()
-        conn.close()
+        cnx.close()
         return
 
     try:
         cursor.execute("DELETE FROM maquinas WHERE id = %s", (id_maquina,))
-        conn.commit()
+        cnx.commit()
         print("Máquina eliminada correctamente.")
     except Exception as e:
         print("Error al eliminar máquina:", e)
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def asignar_maquina():
-    conn = get_connection()
-    cursor = conn.cursor()
+def asignar_maquina(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     from clientes import cliente_existe, direccion_existe  # Asumiendo que tienes esas funciones
 
@@ -153,7 +154,7 @@ def asignar_maquina():
     if not direcciones:
         print("El cliente no tiene direcciones.")
         cursor.close()
-        conn.close()
+        cnx.close()
         return
 
     print("Direcciones disponibles:")
@@ -173,7 +174,7 @@ def asignar_maquina():
     if not maquinas:
         print("No hay máquinas disponibles para asignar.")
         cursor.close()
-        conn.close()
+        cnx.close()
         return
 
     print("Máquinas disponibles:")
@@ -203,7 +204,7 @@ def asignar_maquina():
     if confirmar != 's':
         print("Asignación cancelada.")
         cursor.close()
-        conn.close()
+        cnx.close()
         return
 
     try:
@@ -212,17 +213,17 @@ def asignar_maquina():
             VALUES (%s, %s, %s, %s, %s)
         """, (id_maquina, id_cliente, id_direccion, costo, fecha_alquiler))
         cursor.execute("UPDATE maquinas SET disponibilidad = FALSE WHERE id = %s", (id_maquina,))
-        conn.commit()
+        cnx.commit()
         print("Máquina asignada correctamente.")
     except Exception as e:
         print("Error al asignar máquina:", e)
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def desasignar_maquina():
-    conn = get_connection()
-    cursor = conn.cursor()
+def desasignar_maquina(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     # Listar máquinas asignadas
     cursor.execute("""
@@ -235,7 +236,7 @@ def desasignar_maquina():
     if not asignadas:
         print("No hay máquinas asignadas.")
         cursor.close()
-        conn.close()
+        cnx.close()
         return
 
     print("\nMáquinas asignadas:")
@@ -253,21 +254,21 @@ def desasignar_maquina():
     if confirmar != 's':
         print("Operación cancelada.")
         cursor.close()
-        conn.close()
+        cnx.close()
         return
 
     try:
         cursor.execute("DELETE FROM maquinas_alquiler WHERE id_maquina = %s", (id_maquina,))
         cursor.execute("UPDATE maquinas SET disponibilidad = TRUE WHERE id = %s", (id_maquina,))
-        conn.commit()
+        cnx.commit()
         print("Máquina desasignada correctamente.")
     except Exception as e:
         print("Error al desasignar máquina:", e)
 
     cursor.close()
-    conn.close()
+    cnx.close()
 
-def menu_maquinas():
+def menu_maquinas(config):
     while True:
         print("""
 --- Gestión de Máquinas ---
@@ -280,15 +281,15 @@ def menu_maquinas():
 """)
         opcion = input("Seleccione una opción: ").strip()
         if opcion == '1':
-            listar_maquinas()
+            listar_maquinas(config)
         elif opcion == '2':
-            agregar_maquina()
+            agregar_maquina(config)
         elif opcion == '3':
-            eliminar_maquina()
+            eliminar_maquina(config)
         elif opcion == '4':
-            asignar_maquina()
+            asignar_maquina(config)
         elif opcion == '5':
-            desasignar_maquina()
+            desasignar_maquina(config)
         elif opcion == '6':
             print("Saliendo...")
             break
@@ -296,4 +297,4 @@ def menu_maquinas():
             print("Opción inválida.")
 
 if __name__ == "__main__":
-    menu_maquinas()
+    menu_maquinas(config)
