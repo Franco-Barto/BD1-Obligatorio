@@ -46,10 +46,10 @@ def maquina_existe(cursor, id_maquina):
 
 def maquinas_de_cliente(cursor, admin, id_cliente):
     if admin:
-        cursor.execute(f"select id from maquinas")
+        cursor.execute(f"select id_maquina from maquinas_alquiler")
         maquinas = cursor.fetchall()
     else:
-        cursor.execute(f"select id from maquinas where id_cliente = {id_cliente}")
+        cursor.execute(f"select id_maquina from maquinas_alquiler where id_cliente = {id_cliente}")
         maquinas = cursor.fetchall()
     lista=[]
     for i in maquinas:
@@ -527,10 +527,10 @@ def asignar_mantenimiento(config, admin, id_cliente):
 
 
     # Mostrar máquinas
-    query=""""SELECT m.id, m.modelo, d.direccion
+    query="""SELECT m.id, m.modelo, d.direccion
                     FROM maquinas m
                             JOIN maquinas_alquiler ma ON m.id = ma.id_maquina
-                            JOIN direcciones d ON ma.id_direccion = d.id""""
+                            JOIN direcciones d ON ma.id_direccion = d.id"""
     id_maqs = maquinas_de_cliente(cursor, admin, id_cliente)
     maq_str = []
     valores = []
@@ -538,6 +538,7 @@ def asignar_mantenimiento(config, admin, id_cliente):
         maq_str.append("m.id = %s")
         valores.append(i)
     query += (" WHERE (" + " OR ".join(maq_str) + ")")
+    print(query)
     cursor.execute(query, tuple(valores))
     maquinas = cursor.fetchall()
 
@@ -604,7 +605,7 @@ Observaciones: {observaciones or '(sin observaciones)'}
     cnx.close()
    
 # Menú principal
-def menu_mantenimientos():
+def menu_mantenimientos(config, admin, id_cliente):
     while True:
         print("""
 --- MÓDULO DE GESTIÓN DE MANTENIMIENTOS ---
@@ -615,11 +616,11 @@ def menu_mantenimientos():
 """)
         opcion = input("Seleccione una opción: ").strip()
         if opcion == '1':
-            consultar_mantenimientos()
+            consultar_mantenimientos(config, admin, id_cliente)
         elif opcion == '2':
-            editar_mantenimiento()
+            editar_mantenimiento(config, admin, id_cliente)
         elif opcion == '3':
-            asignar_mantenimiento()
+            asignar_mantenimiento(config, admin, id_cliente)
         elif opcion == '4':
             print("Saliendo del módulo de mantenimientos.")
             break
@@ -634,4 +635,4 @@ if __name__ == "__main__":
         'database': 'obligatorio'
     }
     config.update({'user': 'admin', 'password': 'blablabla'})
-    main(config, False, 1)
+    menu_mantenimientos(config, False, 1)

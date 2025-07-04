@@ -7,8 +7,11 @@ USE obligatorio;
 
 CREATE TABLE login (
    correo VARCHAR(120) NOT NULL PRIMARY KEY,
-   contraseña VARCHAR(56) NOT NULL,
-   es_administrador BOOLEAN NOT NULL
+   contraseña VARCHAR(56) NOT NULL);
+
+CREATE TABLE admins (
+    correo VARCHAR(120) NOT NULL PRIMARY KEY,
+    foreign key (correo) references login(correo)
 );
 
 

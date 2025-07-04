@@ -25,12 +25,8 @@ def login(Correo, Contraseña):
         cursor.execute(query)
         es_admin = cursor.fetchone()
         if es_admin:
-            admin = es_admin[1]
-            if es_admin[1]:
-                config.update({'user':'admin','password':'blablabla'})
-
-            else:
-                config.update({'user':'noadmin','password':'blebleble'})
+            config.update({'user':'admin','password':'blablabla'})
+            admin = True
         else:
             config.update({'user':'noadmin','password':'blebleble'})
         cnx.close()
@@ -71,23 +67,38 @@ def crear_usuario(Correo, Contraseña):
     cnx.close()
     return login(Correo, Contraseña)
 
-if __name__ == "__main__":
-    #Correo = input("Correo: ")
-    #Contraseña = input("Contraseña: ")
-    #login(Correo, Contraseña)
-    #print(config)
+def menu_login():
+    while True:
+        print("""
+--- MÓDULO DE LOGIN ---
+1. Ingresar usuario
+2. Crear usuario
+3. Salir
+""")
+        opcion = input("Seleccione una opción: ").strip()
+        if opcion == '1':
+            Correo = input("Ingresar correo: ").strip()
+            Contraseña = input("Ingresar contraseña: ")
+            config, admin, id_cliente = login(Correo,Contraseña)
+        elif opcion == '2':
+            Correo = input("Ingresar correo: ").strip()
+            Contraseña = input("Ingresar contraseña: ")
+            config, admin, id_cliente = crear_usuario(Correo,Contraseña)
+        elif opcion == '3':
+            print("Saliendo del módulo de login.")
+            return config, admin, id_cliente
+        else:
+            print("Opción inválida. Intente nuevamente.")
 
-    #config = login("juan.perez@gmail.com","contrasena123")
-    #print(config)
-    #config = login("juan.perez@gmail.com","jijija")
-    #print(config)
-    #config = login("juan.perez@gmaila.com","jijija")
-    #print(config)
+if __name__ == "__main__":
+    config = login("juan.perez@gmail.com","contrasena123")
+    print(config)
+    config = login("juan.perez@gmail.com","jijija")
+    print(config)
+    config = login("juan.perez@gmaila.com","jijija")
+    print(config)
     config = login("ana.morales@gmail.com","pass789")
     print(config)
-    #config = login("ana.m orales@gmail.com","pass789")
-    #print(config)
-
-    #print(crear_usuario("prueba6","puntoycoma"))
-    for i in []:
-        print("hello")
+    config = login("ana.m orales@gmail.com","pass789")
+    print(config)
+    print(crear_usuario("prueba6","puntoycoma"))
