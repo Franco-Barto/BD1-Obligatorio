@@ -1,11 +1,10 @@
 import Login
 import clientes
-#import insumospy
+import insumos
 import maquinas
 import mantenimientos
 import Querys
 import Técnicos
-from Login import menu_login
 
 config = {
         'user': 'login',
@@ -26,6 +25,7 @@ if __name__ == '__main__':
         4. MANTENIMIENTOS
         5. TECNICOS
         6. INFORMES
+        7. INSUMOS
         """)
         opcion = input("Seleccione una opción: ").strip()
         if opcion == '1':
@@ -40,5 +40,7 @@ if __name__ == '__main__':
             Técnicos.menu_técnicos(config)
         elif opcion == '6':
             Querys.menu_inf(config,admin)
+        elif opcion == '7':
+            insumos.menu_insumos(config)
         else:
             print("Opción inválida.")
