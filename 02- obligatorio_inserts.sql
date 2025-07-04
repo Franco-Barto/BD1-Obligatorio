@@ -76,3 +76,4 @@ INSERT INTO mantenimientos (id_maquina, id_tecnico, tipo, fecha, hora, observaci
 (3, 3, 'preventivo', '2025-06-22','11:15:00', 'Limpieza y ajuste de piezas móviles.');
 
 
+Select c.*,sum(m.costo_alquiler_mensual+ifnull(precio_unitario,0)*ifnull(cantidad_usada,0)) as gastos_mensuales from (select * from registro_consumo where fecha between '2025-8-01' and '2025-8-31') as rc right join (select * from maquinas_alquiler where fecha_alquiler<'2025-08-01') as m on rc.id_maquina = m.id_maquina left join insumos as i on i.id = rc.id_insumo join clientes as c on c.id = m.id_cliente group by id_cliente

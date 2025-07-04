@@ -21,8 +21,7 @@ def max_dia(año,mes):
 def tot_mensual(año,mes,config):
     cnx = mysql.connector.connect(**config)
     cursor =cnx.cursor()
-    query=f"Select c.*,sum(costo_alquiler_mensual+precio_unitario*ifnull(cantidad_usada,0)) as gastos_mensuales from (select * from registro_consumo where fecha between '{año}-{mes}-01' and '{año}-{mes}-{max_dia(año,mes)}') as rc right join maquinas as m on rc.id_maquina = m.id left join insumos as i on i.id = rc.id_insumo join clientes as c on c.id = m.id_cliente group by id_cliente"
-    print(query)
+    query=f"Select c.*,sum(m.costo_alquiler_mensual+ifnull(precio_unitario,0)*ifnull(cantidad_usada,0)) as gastos_mensuales from (select * from registro_consumo where fecha between '{año}-{mes}-01' and '{año}-{mes}-{max_dia(año,mes)}') as rc right join (select * from maquinas_alquiler where fecha_alquiler<'{año}-{mes}-01') as m on rc.id_maquina = m.id_maquina left join insumos as i on i.id = rc.id_insumo join clientes as c on c.id = m.id_cliente group by id_cliente"
     cursor.execute(query)
     tot=cursor.fetchall()
     cnx.close()
@@ -42,10 +41,15 @@ def top_insumos(config,cantidad=1,order_by='consumos',año=0,mes=0):
     cnx.close()
     return top
 
-def top_tecnicos(config,catidad=1):
+def top_tecnicos(config,catidad=1,año=0,mes=0):
     cnx = mysql.connector.connect(**config)
     cursor =cnx.cursor()
-    query = f"select t.*, cantidad from tecnicos as t join (select id_tecnico, count(*) as cantidad from mantenimientos group by id_tecnico order by cantidad desc limit {catidad}) as ma on t.id = ma.id_tecnico"
+    if mes:
+        query = f"select t.*, cantidad from tecnicos as t join (select id_tecnico, count(*) as cantidad from mantenimientos group by id_tecnico where fecha between '{año}-{mes}-01' and '{año}-{mes}-{max_dia(año, mes)}' order by cantidad desc limit {catidad}) as ma on t.id = ma.id_tecnico"
+    elif año:
+        query = f"select t.*, cantidad from tecnicos as t join (select id_tecnico, count(*) as cantidad from mantenimientos where fecha between '{año}-01-01' and '{año}-12-31' group by id_tecnico order by cantidad desc limit {catidad}) as ma on t.id = ma.id_tecnico"
+    else:
+        query = f"select t.*, cantidad from tecnicos as t join (select id_tecnico, count(*) as cantidad from mantenimientos group by id_tecnico order by cantidad desc limit {catidad}) as ma on t.id = ma.id_tecnico"
     cursor.execute(query)
     top=cursor.fetchall()
     cnx.close()
@@ -54,36 +58,20 @@ def top_tecnicos(config,catidad=1):
 def top_clientes(config,cantidad=1):
     cnx = mysql.connector.connect(**config)
     cursor =cnx.cursor()
-    query = f"select clientes.*,cantidad from clientes join (select id_cliente, count(*) as cantidad from maquinas group by id_cliente order by cantidad desc limit {cantidad}) as s on clientes.id = s.id_cliente"
+    query = f"select clientes.*,cantidad from clientes join (select id_cliente, count(*) as cantidad from maquinas_alquiler group by id_cliente order by cantidad desc limit {cantidad}) as s on clientes.id = s.id_cliente"
     cursor.execute(query)
     top=cursor.fetchall()
     cnx.close()
     return top
 
-def maquinas_de_cliente(cursor, admin, id_cliente):
-    if admin:
-        cursor.execute(f"select id from maquinas")
-        maquinas = cursor.fetchall()
-    else:
-        cursor.execute(f"select id from maquinas where id_cliente = {id_cliente}")
-        maquinas = cursor.fetchall()
-    lista=[]
-    for i in maquinas:
-        lista.append(i[0])
-    if len(lista)==0:
-        lista.append(0)
-    return lista
+if __name__ == '__main__':
+    config, admin, id_cliente = Login.login("juan.perez@gmail.com","contrasena123")
+    tot=tot_mensual(2025,8,config)
+    print(tot)
+    top=top_insumos(config,2)
+    print(top)
+    top=top_clientes(config,2)
+    print(top)
+    top=top_tecnicos(config,2)
+    print(top)
 
-config, admin, id_cliente = Login.login("juan.perez@gmail.com","contrasena123")
-#tot=tot_mensual(2025,7,config)
-#print(tot)
-#top=top_insumos(config,2)
-#print(top)
-#top=top_clientes(config,2)
-#print(top)
-#top=top_tecnicos(config,2)
-#print(top)
-
-cnx = mysql.connector.connect(**config)
-cursor = cnx.cursor()
-print(f"{maquinas_de_cliente(cursor, False, 4)}")
