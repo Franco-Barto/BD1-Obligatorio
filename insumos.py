@@ -1,13 +1,13 @@
-from db import get_connection
+import mysql.connector
 
 def validar_largo(texto, campo, max_len):
     if len(texto) > max_len:
         print(f"Error: {campo} excede el largo máximo de {max_len} caracteres.")
         return False
     return True
-def listar_insumos():
-    conexion = get_connection()
-    cursor = conexion.cursor()
+def listar_insumos(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
     cursor.execute("SELECT id, descripcion, tipo, precio_unitario, id_proveedor FROM insumos ORDER BY id")
     insumos = cursor.fetchall()
     if insumos:
@@ -17,7 +17,7 @@ def listar_insumos():
     else:
         print("No hay insumos registrados.")
     cursor.close()
-    conexion.close()
+    cnx.close()
 
 
 def pedir_id_proveedor():
@@ -46,15 +46,15 @@ def pedir_entero(mensaje, campo_nombre):
             return int(entrada)
         print(f"Por favor, ingrese un número entero válido para {campo_nombre}.")
 
-def pedir_id_insumo():
-    conexion = get_connection()
-    cursor = conexion.cursor()
+def pedir_id_insumo(config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     while True:
         entrada = input("ID del insumo a modificar (Enter para cancelar): ").strip()
         if entrada == "":
             cursor.close()
-            conexion.close()
+            cnx.close()
             return None
         if not entrada.isdigit():
             print("Por favor, ingrese un número entero válido para el ID del insumo.")
@@ -66,16 +66,16 @@ def pedir_id_insumo():
             print(f"No se encontró un insumo con ID {id_insumo}.")
             continue
         cursor.close()
-        conexion.close()
+        cnx.close()
         return id_insumo
 
-def proveedor_existe(id_proveedor):
-    conexion = get_connection()
-    cursor = conexion.cursor()
+def proveedor_existe(config,id_proveedor):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
     cursor.execute("SELECT COUNT(*) FROM proveedores WHERE id = %s", (id_proveedor,))
     existe = cursor.fetchone()[0] > 0
     cursor.close()
-    conexion.close()
+    cnx.close()
     return existe
 
 def confirmar_entrada(prompt):
@@ -85,7 +85,7 @@ def confirmar_entrada(prompt):
             return entrada
         print("Entrada inválida. Debe ser 's' o 'n'.")
 
-def agregar_insumo(descripcion, tipo, precio_unitario, id_proveedor):
+def agregar_insumo(descripcion, tipo, precio_unitario, id_proveedor,config):
     if not descripcion or len(descripcion.strip()) == 0:
         print("Error: La descripción es obligatoria.")
         return
@@ -95,8 +95,8 @@ def agregar_insumo(descripcion, tipo, precio_unitario, id_proveedor):
         print(f"Error: El proveedor con ID {id_proveedor} no existe.")
         return
 
-    conexion = get_connection()
-    cursor = conexion.cursor()
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
     sql = """
         INSERT INTO insumos (descripcion, tipo, precio_unitario, id_proveedor)
         VALUES (%s, %s, %s, %s)
@@ -110,11 +110,11 @@ def agregar_insumo(descripcion, tipo, precio_unitario, id_proveedor):
         print("Error al agregar insumo:", e)
     finally:
         cursor.close()
-        conexion.close()
+        cnx.close()
 
 def modificar_insumo(id_insumo):
-    conexion = get_connection()
-    cursor = conexion.cursor()
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     # Consultar datos actuales
     cursor.execute("SELECT descripcion, tipo, precio_unitario, id_proveedor FROM insumos WHERE id = %s", (id_insumo,))
@@ -123,7 +123,7 @@ def modificar_insumo(id_insumo):
     if not fila:
         print(f"No se encontró un insumo con ID {id_insumo}.")
         cursor.close()
-        conexion.close()
+        cnx.close()
         return
 
     descripcion_actual, tipo_actual, precio_actual, proveedor_actual = fila
@@ -144,7 +144,7 @@ def modificar_insumo(id_insumo):
     elif len(nuevo_tipo) > 50:
         print("Error: tipo excede el largo máximo de 50 caracteres.")
         cursor.close()
-        conexion.close()
+        cnx.close()
         return
 
     # Precio: validar input o mantener actual
@@ -202,17 +202,17 @@ def modificar_insumo(id_insumo):
         WHERE id = %s
         """
         cursor.execute(sql, (nueva_descripcion, nuevo_tipo, nuevo_precio, nuevo_proveedor, id_insumo))
-        conexion.commit()
+        cnx.commit()
         print("Insumo modificado correctamente.")
     except Exception as e:
         print("Error al modificar insumo:", e)
     finally:
         cursor.close()
-        conexion.close()
+        cnx.close()
 
-def eliminar_insumo(id_insumo):
-    conexion = get_connection()
-    cursor = conexion.cursor()
+def eliminar_insumo(id_insumo,config):
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
 
     cursor.execute("SELECT descripcion FROM insumos WHERE id = %s", (id_insumo,))
     fila = cursor.fetchone()
@@ -228,21 +228,21 @@ def eliminar_insumo(id_insumo):
     if confirmar != "s":
         print("Eliminación cancelada.")
         cursor.close()
-        conexion.close()
+        cnx.close()
         return
 
     try:
         cursor.execute("DELETE FROM insumos WHERE id = %s", (id_insumo,))
-        conexion.commit()
+        cnx.commit()
         print("Insumo eliminado correctamente.")
     except Exception as e:
         print("Error al eliminar insumo:", e)
     finally:
         cursor.close()
-        conexion.close()
+        cnx.close()
 
 
-def listar_insumos():
+def listar_insumos(config):
     print("\n--- Listar Insumos ---")
     filtro_desc = input("Filtrar por descripción (Enter para no filtrar): ").strip()
     filtro_tipo = input("Filtrar por tipo (Enter para no filtrar): ").strip()
@@ -277,8 +277,8 @@ def listar_insumos():
         sql += " WHERE " + " AND ".join(condiciones)
     sql += " ORDER BY id"
 
-    conexion = get_connection()
-    cursor = conexion.cursor()
+    cnx = mysql.connector.connect(**config)
+    cursor =cnx.cursor()
     cursor.execute(sql, tuple(parametros))
     insumos = cursor.fetchall()
 
@@ -289,45 +289,46 @@ def listar_insumos():
     else:
         print("No se encontraron insumos con esos filtros.")
     cursor.close()
-    conexion.close()
+    cnx.close()
 
 
 # Menú interactivo
-while True:
-    print("\n--- MENÚ DE INSUMOS ---")
-    print("1. Agregar insumo")
-    print("2. Modificar insumo")
-    print("3. Eliminar insumo")
-    print("4. Listar insumos")
-    print("5. Salir")
-    opcion = input("Seleccione una opción: ").strip()
+def menu_insumos(config):
+    while True:
+        print("\n--- MENÚ DE INSUMOS ---")
+        print("1. Agregar insumo")
+        print("2. Modificar insumo")
+        print("3. Eliminar insumo")
+        print("4. Listar insumos")
+        print("5. Salir")
+        opcion = input("Seleccione una opción: ").strip()
 
-    if opcion == "1":
-        desc = input("Descripción: ").strip()
-        tipo = input("Tipo: ").strip()
-        precio = pedir_precio_unitario()
-        proveedor = pedir_id_proveedor()
-        agregar_insumo(desc, tipo, precio, proveedor)
+        if opcion == "1":
+            desc = input("Descripción: ").strip()
+            tipo = input("Tipo: ").strip()
+            precio = pedir_precio_unitario()
+            proveedor = pedir_id_proveedor()
+            agregar_insumo(desc, tipo, precio, proveedor,config)
 
-    if opcion == "2":
-         id_mod = pedir_id_insumo()
-         if id_mod is not None:
-             modificar_insumo(id_mod)
-         else:
-           print("Modificación cancelada por el usuario.")
+        if opcion == "2":
+             id_mod = pedir_id_insumo(config)
+             if id_mod is not None:
+                 modificar_insumo(id_mod,config)
+             else:
+               print("Modificación cancelada por el usuario.")
 
-    elif opcion == "3":
-        listar_insumos()
-        id_borrar = pedir_entero("ID del insumo a eliminar: ", "ID del insumo")
-        eliminar_insumo(id_borrar)
+        elif opcion == "3":
+            listar_insumos(config)
+            id_borrar = pedir_entero("ID del insumo a eliminar: ", "ID del insumo")
+            eliminar_insumo(id_borrar,config)
 
-    elif opcion == "4":
-       listar_insumos()
+        elif opcion == "4":
+           listar_insumos(config)
 
-    elif opcion == "5":
+        elif opcion == "5":
 
-       print("Saliendo...")
-       break
+           print("Saliendo...")
+           break
 
-    else:
-        print("Opción inválida. Seleccione un número entre 1 y 5.")
+        else:
+            print("Opción inválida. Seleccione un número entre 1 y 5.")
