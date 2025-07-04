@@ -106,3 +106,16 @@ CREATE TABLE mantenimientos (
    FOREIGN KEY (id_tecnico) REFERENCES tecnicos(id)
 );
 
+drop user 'login';
+drop user 'admin';
+drop user 'noadmin';
+create user 'login' identified by 'password';
+grant select,insert on login to 'login';
+grant select on admins to 'login';
+flush privileges;
+create user 'admin' identified by 'blablabla';
+GRANT ALL PRIVILEGES ON * TO 'admin';
+flush privileges;
+create user 'noadmin' identified by 'blebleble';
+grant select on * to 'noadmin';
+flush privileges;

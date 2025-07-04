@@ -68,6 +68,14 @@ def crear_usuario(Correo, Contraseña):
     return login(Correo, Contraseña)
 
 def menu_login():
+    config = {
+        'user': 'login',
+        'password': 'password',
+        'host': '127.0.0.1',
+        'database': 'obligatorio'
+    }
+    admin = False
+    id_cliente = 0
     while True:
         print("""
 --- MÓDULO DE LOGIN ---
@@ -75,6 +83,7 @@ def menu_login():
 2. Crear usuario
 3. Salir
 """)
+
         opcion = input("Seleccione una opción: ").strip()
         if opcion == '1':
             Correo = input("Ingresar correo: ").strip()

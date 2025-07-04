@@ -64,6 +64,37 @@ def top_clientes(config,cantidad=1):
     cnx.close()
     return top
 
+def menu_inf(config,admin):
+    if  admin:
+        print("Solo admins tienen acceso.")
+        while True:
+            print("""
+        --- Gestión de Máquinas ---
+        1. Total mensual a cobrar
+        2. Top insumo
+        3. Técnico con más mantenimientos
+        4. Cliente con mayor cantidad de maquinas
+        5. Salir
+        """)
+            opcion = input("Seleccione una opción: ").strip()
+            if opcion == '1':
+                año=int(input("Año:"))
+                mes=int(input("Mes:"))
+                tot_mensual(año,mes,config)
+            elif opcion == '2':
+                top_insumos(config)
+            elif opcion == '3':
+                top_tecnicos(config)
+            elif opcion == '4':
+                top_clientes(config)
+            elif opcion == '5':
+                print("Saliendo...")
+                break
+            else:
+                print("Opción inválida.")
+    else:
+        print("Solo admins tienen acceso.")
+
 if __name__ == '__main__':
     config, admin, id_cliente = Login.login("juan.perez@gmail.com","contrasena123")
     tot=tot_mensual(2025,8,config)
